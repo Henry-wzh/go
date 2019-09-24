@@ -1,6 +1,7 @@
 # Default ignored files
 .idea/.gitignore
 /workspace.xml% 
+.DS_Store
 # Binaries for programs and plugins
 *.exe
 *.exe~

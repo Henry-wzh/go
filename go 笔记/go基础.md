@@ -371,16 +371,6 @@ func main(){
 ```
 
 ```go
-// Prinf() 输出格式化
-%d		// 十进制整型
-%b		// 二进制
-%c		// 字符输出
-%s		// 字符串
-%v		// 默认格式
-%%		// 输出 %
-```
-
-```go
 package main
 import "fmt"
 
@@ -447,8 +437,23 @@ func main(){
     fmt.Println(v)
 }
 ```
+-   Printf()：**输出格式化**
 
-
+| 格式化 | 功能                                       |
+| ------ | ------------------------------------------ |
+| **%v** | 按值的本来值输出                           |
+| %+v    | 在 %v 基础上，对结构体字段名和值进行展开   |
+| %#v    | 输出 Go 语言语法格式的值                   |
+| %T     | 输出 Go 语言语法格式的类型和值             |
+| **%%** | 输出 % 本体                                |
+| **%b** | 整型以二进制方式显示                       |
+| %o     | 整型以八进制方式显示                       |
+| **%d** | 整型以十进制方式显示                       |
+| **%x** | 整型以十六进制方式显示                     |
+| %X     | 整型以十六进制、字母大写方式显示           |
+| %U     | Unicode 字符                               |
+| %f     | 浮点数                                     |
+| **%p** | 指针，十六进制方式显示，并加上前导的**0x** |
 
 ## 5. 流程控制
 
@@ -510,6 +515,8 @@ func grade(score int)(string){
 
 ### 2. 循环
 
+-   for循环
+
 ```go
 package main
 import "fmt"
@@ -538,9 +545,538 @@ func sum2(num int){
 }
 ```
 
+-   range
+
+```go
+func main(){
+    s := 'abc'
+    for i, c := range s{
+        fmt.printf("%d, %c\n", i, c)
+    }
+}
+```
+
 ### 3. 跳转
 
+-   break和continue
+-   goto
 
+```go
+func main(){
+    for i := 0; i<5; i++{
+        fmt.println(i)
+        goto OUT
+    }
+    
+    OUT:
+    fmt.println("yes")
+}
+```
+
+# 2. 函数
+
+## 1. 自定义函数
+
+-   函数和字段，名字首字母小写代表的是private(**只有包内才能调用**)，大写为public
+
+```go
+// 也可以这样定义
+func example(v1, v2 int){}
+
+// 不定参
+func example(args ... int){
+    for _, n := range args{
+        fmt.Println(n)
+    }
+}
+
+// 返回多个值
+func example()(int, string){}
+// 返回一个值
+func example() int {}
+
+// 返回值，定义变量名
+func example()(a int, str string){
+    a = 123
+    str = 'abc'
+    return
+}
+```
+
+-   1-100的和
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	res := rsum(100)
+	fmt.Println(res)
+
+}
+
+// 循环版
+func sum(num int) (res int) {
+	res = 0
+	for i := 1; i <= num; i++ {
+		res += i
+	}
+	return
+}
+
+// 递归版
+func rsum(num int) (res int) {
+	if num == 1 {
+		return 1
+	}
+	return num + rsum(num-1)
+}
+```
+
+## 2. defer 关键字
+
+### 1. 功能
+
+1.  defer⽤于**延迟一个函数或者方法的执行**
+2.  defer语句经常被用于**处理成对的操作**，如打开、关闭、连接、断开连接、加锁、释放锁
+3.  通过defer机制，不论函数逻辑多复杂，都能**保证在任何执行路径下，资源被释放**
+4.  释放资源的defer应该**直接跟在请求资源的语句后**，以免忘记释放资源
+
+### 2. 单个defer
+
+```go
+func main(){
+    // 延迟执行，一般用于资源关闭
+    defer fmt.Println("defer")
+    fmt.Println("main")
+}
+```
+
+### 2. 多个defer
+
+-   逆序执行，即使有异常也会继续执行
+
+```go
+func main(){
+    defer fmt.Println("a")
+    defer fmt.Println("b")
+    defer test(0)
+    defer fmt.Println("c")
+}
+// c b a
+
+func test(num int){
+    fmt.Println(100/num)
+}
+```
+
+# 3. 复合数据类型
+
+-   总共 **5** 种数据类型
+
+|  类型   |  名称  | 默认值  |
+| :-----: | :----: | :-----: |
+| pointer |  指针  | **nil** |
+|  array  |  数组  |    0    |
+|  slice  |  切片  |   nil   |
+|   map   |  字典  |   nil   |
+| struct  | 结构体 |    -    |
+
+## 1. 指针
+
+1.  &a：代表取a的地址
+2.  指针和变量是配合使用的
+3.  指针也有类型，只能指向定义类型的数据，如果是对象定义类名
+
+### 1. 定义和初始化
+
+```go
+func main(){
+    a := 10
+    var p *int = &a
+    fmt.Printf("%x\n", p)
+    fmt.Println(*p)
+    // 修改数据
+    *p = 20
+    fmt.Println(*p, num)
+    
+	b := "abc"
+	var ip *string = &b
+	fmt.Printf("%X\n", ip)
+	fmt.Println(*ip)
+}
+```
+
+### 2. 空指针
+
+-   var ptr *int
+
+```go
+// 是否为空的判断
+if ptr == nil{
+    fmt.Println("ptr指针为空")
+}
+```
+
+### 3. 值传递和引用传递
+
+-   **值传递**：相当于是变量的副本，不会修改原来的变量
+-   **引用传递**：传递的是变量的地址，相当于是指针
+-   go语言，函数传参都是值传递
+
+```c
+// c 语言版本
+void pass_by_val(int a){
+    a++;
+}
+void pass_by_ref(int *a){
+    (*a)++;
+}
+
+int main(){
+    int a = 3;
+    pass_by_val(a);
+    printf("%d\n", a);
+    pass_by_ref(&a);
+    printf("%d\n", a);
+}
+```
+
+```go
+// go 语言版本的交换数据
+func swap(a, b *int){
+    *a, *b = *b, *a
+}
+
+func main(){
+    a, b := 3, 4
+    swap(&a, &b)
+    fmt.Println(a, b)
+}
+```
+
+### 2. new() 和 make()
+
+1.  **new()**用来**分配内存**，但与其他语言中的同名函数不同，它**不会初始化内存**，**只会将内存置零**
+2.  **make(t Type, size ... IntergerType)**会返回一个指针，该指针指向新分配的，类型为 t 的零置，适用于创建结构体
+3.  
+4.  **make()的目的不同于new()**，它**只能创建 slice、map、channel**，并返回类型为T(**非指针**)的已初始化(非零值)的值
+5.  new是一般是**创建对象**的，也可以创建变量。
+
+```go
+func main(){
+    // new
+    p := new([] int)
+    fmt.Println(p)
+    // make,   类型， 长度，容量
+    v := make([] int, 10, 50)
+    fmt.Println(v)
+}
+```
+
+## 2. 数组
+
+### 1. 声明数组
+
+#### 1. 一维数组
+
+```go
+// 数据定义
+func main(){
+   	// 直接定义
+	var arr1 [10] int  
+    // :=
+    arr2 := [3]int{1,2,3}
+    // 省略大小，编译器自动推断
+    arr3 := [...]int{1,2,3,4,5}
+    fmt.Println(arr1, arr2, arr3)
+}
+```
+
+#### 2. 二维数组
+
+-   定义
+
+```go
+func main(){
+    var grid [4][5] int
+    fmt.Println(grid)
+}
+```
+
+### 2. 数组遍历
+
+```go
+// 数据定义
+func main(){
+    arr := [...]int(1,2,3,4,5)
+    // 方式一
+    for i:=0; i<len(arr3); i++{
+        fmt.Println(arr[i])
+    }
+    // 方式二
+    for _, v := range arr{
+        fmt.Println(v)
+    }
+}
+```
+
+-   数组传递是传值还是引用？
+
+```go
+// 数组的传递是值传递
+package main
+import "fmt"
+
+func printArr(arr [5]int) {
+	arr[0] = 18
+	for _, v := range arr {
+		fmt.Println(v)
+	}
+}
+
+func main() {
+	arr := [...] int{1, 2, 3, 4, 5}
+	printArr(arr)
+	for _, v := range arr {
+		fmt.Println(v)
+	}
+}
+```
+
+```go
+package main
+
+import "fmt"
+
+func printArr(arr *[5]int) {
+	arr[0] = 18
+	for _, v := range arr {
+		fmt.Println(v)
+	}
+}
+
+func main() {
+	arr := [...] int{1, 2, 3, 4, 5}
+	printArr(&arr)
+	for _, v := range arr {
+		fmt.Println(v)
+	}
+}
+```
+
+### 3. 数组切片
+
+-   切片操作和 python 中的 list 类似，但底层不同，go的切片是 view 操作，类似数据库的 view 操作
+-   切片结果是 **slice 类型**：[]类型（如：[]int)，此时是对 **array** 的引用
+-   切片索引**不能**超过数组的**最大索引值**
+
+```go
+func main(){
+    arr := [...]int{1,2,3,4,5,6,7,8,9}
+    fmt.Println(arr[2:6])
+}
+```
+
+## 3. slice
+
+### 1. 定义
+
+1.  数组的长度固定，go 提供了数组切片(slice)
+2.  取值时，索引值超出范围会报错
+
+```go
+func main(){
+    // 声明切片，只是比数组少了长度
+    var s1 [] int
+    // :=
+    s2 := []int{}
+    // make()
+    var s3 []int = make([]int, 0, 0)  // 与下一行等价
+    var s3 []int = make([]int, 0)
+    // 声明并初始化
+    s4 := []int{1,2,3,4}
+}
+```
+
+### 2. 内置函数
+
+#### 1. append()
+
+```go
+func main(){
+	var s1 []int
+    s1 = append(s1, 1)
+    fmt.Println(s1)
+    s1 = append(s1, 2, 3...)
+    fmt.Println(s1)
+   	// 用make创建指定大小的切片
+    s2 := make([]int, 5)
+    s2 = append(s2, 6)
+    fmt.Println(s2)
+    // 创建并初始化
+    s3 := []int{1,2,3}
+    s3 = append(s3, 4,5)
+    fmt.Println(s3)   
+}
+```
+
+-   切片补充
+-   可以在切片的基础上继续切片，只要不超过原数组就行
+
+```go
+// 切片是 view 操作
+func main(){
+    // 数组
+    arr := [...]int{0, 1,2,3,4,5,6,7}
+    s1 := arr[2:4]
+	fmt.Println(s1, s1[0], s1[1], s1[:6])
+    fmt.Println(len(s1))
+    fmt.Println(cap(s1))			// 容量到原数组结尾
+}
+```
+
+#### 2. copy()
+
+-   两个切片之间复制数据
+
+```go
+func main(){
+    arr := [...]int{0,1,2,3,4,5,6,7,8,9}
+    s1 := arr[8:]  // 8，9
+    s2 := arr[:5]	// 0，1，2，3，4
+    // 将第二个切片元素copy到第一个
+    // si从头开始覆盖，索引对应位置赋值，不同位置不变
+    copy(s2, s1)
+}
+```
+
+## 4. Map
+
+### 1. 定义
+
+-   **类似python的dict**
+-   无序的健值对的集合，可以通过key找到value值
+
+```go
+func main(){
+    // 定义map,直接声明
+    var m1 map[int] string
+    var m11 map[int] string = map[int]string{1:"abc", 2:"def"}
+    // :=
+    m2 := map[int]string{}
+    m2 := map[int]string{1:"abc", 2:"def"}
+    // make()
+    m3 := make(map[int]string)
+    // 指定容量的 make()
+    m4 := make(map[int]string, 10)
+    fmt.Println(m1, m2, m3)
+	fmt.Println(m4, len(m4),)
+}
+```
+
+### 2. 键值操作
+
+```go
+func main(){
+    m1 := map[int]string{1:"北京", 2:"上海", 3:"广州"}
+    // 增加
+    m1[4] = "杭州"
+    // 修改
+    m1[1] = "beijing"
+    fmt.Println(m1)
+    // 删除
+    delete(m1, 2)
+    fmt.Println(m1)
+}
+```
+
+### 3. 遍历
+
+```go
+func main(){
+    m1 := map[int]string{1:"北京", 2:"上海", 3:"广州"}
+    // 遍历
+    for k, v := range m1{
+        fmt.Println(k, v)
+    }
+    // 判断某个key对象的value是否存在
+    val, ok := m1[1]
+    fmt.Println(val, ok)
+}
+```
+
+## 5. 结构体
+
+### 1.  定义和初始化
+
+-   go语言没有class，只有结构题 struct
+
+```go
+// 定义 type 结构体名 struct{}
+// 学生的结构体
+type Student struct{
+    id int
+    name string
+    gender byte
+    age int
+    address string
+}
+
+func main(){
+    // 顺序初始化
+    var s1 Student = Student{1, "john", 'f', 20, "beijing"}
+    // 指定初始化
+    s2 := Student{id:2, age:20}
+    // 结构体作为指针变量初始化
+    var s3 *Student = &Student{3, "tom", 'm', 20, 'bj'}
+    fmt.Println(s1, s2, s3)
+    fmt.Println(s1.id, s1.name)
+    // 获取指针对象的字段
+    fmt.Println((*s3).name)
+    fmt.Println(s3.name)      // 底层会转为 (*s3).name
+    
+}
+```
+
+### 2. 结构体参数
+
+-   结构体可以作为函数参数传递
+
+```go
+// 定义 type 结构体名 struct{}
+// 学生的结构体
+type Student struct{
+    id int
+    name string
+    gender string
+    age int
+    address string
+}
+// 定义传递学生对象的方法
+func temStudent(tmp Student){
+    tmp.id = 250
+    fmt.Println("temStudent", tmp)
+}
+
+// 传递指针对象
+func pStudent(p *Student){
+    p.id = 300
+    fmt.Println("pStudent", p)
+}
+
+func main(){
+    // 顺序初始化
+    var s1 Student = Student{1, "john", "female",  20, "beijing"}
+    // 传递非指针
+    temStudent(s1)
+    fmt.Println("main", s1)
+    // 传递非指针
+    pStudent(&s1)
+    fmt.Println("main", s1)
+}
+```
 
 
 

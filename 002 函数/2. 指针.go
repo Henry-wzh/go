@@ -1,6 +1,8 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+)
 
 func main() {
 	//a := 10
@@ -14,6 +16,13 @@ func main() {
 	//fmt.Println(*ip)
 
 	//test()
+
+
+	var p, q *int
+	a := 10
+	p = &a
+	fmt.Printf("%p\n", p)
+	fmt.Printf("%p\n", q)
 
 }
 

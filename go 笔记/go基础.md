@@ -472,13 +472,12 @@ func main(){
     }else{
         fmt.Printf("%s\n", content)
     }
-    
     // 选择方式二
-    if content, e = ioutil.ReadFile(filename): e != nil{
-        fmt.Pringln(e)
-    }else{
-        fmt.Printf("%s\n", content)
-    }
+	if content, e := ioutil.ReadFile(filename); e != nil{
+		fmt.Println(e)
+	}else{
+		fmt.Printf("%s\n", content)
+	}
 }
 ```
 
@@ -578,13 +577,14 @@ func main(){
 ## 1. 自定义函数
 
 -   函数和字段，名字首字母小写代表的是private(**只有包内才能调用**)，大写为public
+-   `args ...int`：**表示任意个 int 型数据**
 
 ```go
 // 也可以这样定义
 func example(v1, v2 int){}
 
 // 不定参
-func example(args ... int){
+func example(args ...int){
     for _, n := range args{
         fmt.Println(n)
     }
@@ -1077,13 +1077,714 @@ func main(){
 }
 ```
 
+# 4. 面向"对象"
+
+## 1. 实现类的特性
+
+1.  没有封装、集成和多态的概念，同样通过结构体实现这些特性
+
+```go
+type Person struct{
+    name string
+    age int
+    gender string
+}
+
+type Student struct{
+    Person					// 匿名字段
+    id int
+    addr string
+    name string
+}
+
+func main(){
+    s1 := {Person{"echo", "21", "female"}, id :1, name:"henry"}
+    var s Student
+    s.name = "henry"
+    fmt.Println(s)
+    s.Person.name = "dean"
+    fmt.Println(s)
+}
+```
+
+-   同名字段情况：赋值问题
+-   所有的内置类型和自定义类型都可以作为匿名字段去使用
+-   **指针类型匿名字段**
+
+```go
+type Person struct{
+    name string
+    age int
+    gender string
+}
+
+type Student struct{
+	*Person					// 匿名字段
+    id int
+}
+
+func main(){
+    s1 := {&Person{"echo", "21", "female"}, id :1, name:"henry"}
+    var s Student
+    s.name = "henry"
+    fmt.Println(s)
+    s.Person.name = "dean"
+    fmt.Println(s)
+}
+```
+
+## 2. 方法
+
+### 1. 定义
+
+-   `func (接收参数 接收类型) 方法名 (参数列表) (返回值)`
+
+```go
+type Myint int
+// 面向过程
+func Add(a, b Myint) Myint{
+    return a + b
+}
+// 面向对象
+func (a Myint) Add(b, Myint) Myint{
+    return a + b
+}  
+
+func main(){
+    var a Myint = 1
+    var b Myint = 1
+    fmt.Println(Add(a, b))
+    fmt.Println(a.Add(b))   
+}
+```
+
+```go
+type Person struct{
+    name string
+    gender string
+    age int
+}
+
+func (p Person)PrintInfo(){
+    fmt.Println(p.name, p.gender, p.age)
+}
+
+func main(){
+    p := Person{"echo", "female", 18}
+    p.PrintInfo()
+}
+```
+
+### 2. 值语义和引用语义
+
+1.  值语义：不会改变原有数据的值
+2.  引用语义：可以修改原来数据
+
+```go
+type Person struct{
+    name string
+    gender string
+    age int
+}
+
+// 引用语义
+func (p *Person)SetInfoPointer(){
+    (*p).name = "dean"
+    p.gender = 22
+}
+
+// 值语义
+func (p Person)SetInfoValue(){
+    p.name = "eliane"
+    p.gender = "female"
+    p.age = 23
+}
+
+func main(){
+    p := Person{"test", "male", 10}
+    (&p).SetInfoPointer()
+    fmt.Println(p)
+    // 值语义，并不会改变原来的值
+    p2 := Person{"exam", "female", 100}
+    p2.SetInfoValue()
+    fmt.Println(p)
+}
+```
+
+### 3. 方法的继承
+
+```go
+type Person struct{
+    name string
+    gender string
+    age int
+}
+
+func (p *Person)SetInfoPointer(){
+    (*p).name = "dean"
+    p.gender = 22
+}
+
+type Student struct{
+    Person
+}
+
+func main(){
+    s := Student{Person{"henry", "male", 18}}
+    s.SetInfoPointer()
+}
+```
+
+### 4. 方法的重写
+
+```go
+type Person struct{
+    name string
+    gender string
+    age int
+}
+
+func (p Person)PrintInfo(){
+    fmt.Println("Person", p.name, p.gender, p.age)
+}
+
+type Student struct{
+    Person
+    id int
+    addr string
+}
+// 方法重写
+func (s Student)PrintInfo(){
+    fmt.Println(s.name, s.gender, s.age)
+}
+
+func main(){
+    p := Person{"henry", "male", 18}
+    p.PrintInfo()
+    s := Student{Person{"echo", "female", 16}, 2, "bj"}
+    s.PrintInfo()
+    // 去调用 person 的方法
+    s.Person.PrintInfo()
+}
+```
+
+### 5. 方法值和方法表达式
+
+```go
+package main
+import "fmt"
+type Person struct {
+	name string
+	age  int
+}
+
+func (p *Person) SetInfo() {
+	(*p).name = "henry"
+	p.age = 19
+}
+
+func main() {
+	p := Person{"echo", 18}
+	v := p.SetInfo								// 方法值
+	v()
+	fmt.Println(p)
+	f := (*Person).SetInfo						// 方法表达式
+	f(&p)
+	fmt.Println(p)
+}
+```
+
+-   创建属性getter和setter 方法并调用
+
+```go
+type Dog struct{
+    name string
+    gender int
+}
+
+func (d *Dog)SetName(name string){
+    d.name = name
+}
+
+func (d *Dog)GetName()string{
+    return d.name
+}
+
+func (d *Dog)bite(){
+    fmt.Println("dog", d.name)
+}
+
+func test01(){
+    d := Dog{"erha", 1}
+    d.bite()
+}
+
+func main(){
+    test01()
+}
+```
+
+## 3. 包和封装
+
+### 1.  包的调用
+
+-   包名.公共方法
+
+```go
+
+```
+
+### 2. 接口
+
+1.  接口(interface)是一个自定义类型，描述了**一系列方法集合**
+2.  接口不能被实例化
+3.  接口名习惯以 er 结尾**
+
+#### 1. 接口使用
+
+```go
+// 接口
+type Humaner interface{
+    // 方法
+    Speak()
+}
+// 结合多态
+type Student struct{
+    name string
+    score int
+}
+type Teacher struct{
+    name string
+    group string
+}
+// 自定义类型
+type MyStr string
+
+// 实现接口的方法
+func (*s Student)Speak(){
+    fmt.Printf("student[%s, %d]\n", s.name, s.score)
+}
+func (*t Teacher)Speak(){
+    fmt.Printf("teacher[%s, %d]\n", t.name, t.group)
+}
+func (str MyStr)Speak(){
+    fmt.Printf("MyStr[%s]\n", "working")
+}
+// 多态的核心，参数为接口类型
+func Who(i Humaner){
+    i.Speak()
+}
+
+func main(){
+    s := &Student{"henry", 90}
+    t := &Teacher{"dean", "golang"}
+    var tmp MyStr = "abc"
+    // 基本调用
+    s.Speak()
+    t.Speak()
+    tmp.Speak()
+    // 多态
+    Who(s)
+    Who(t)
+    Who(tmp)
+}
+```
+
+#### 2. 接口继承
+
+-   和类的继承一样
+
+```go
+type SuperHumaner interface {
+    Humaner
+}
+func SuperWho(i SuperHumaner){
+    i.Speak()
+}
+
+func main(){
+    s := Student{"henry", 19}
+    SuperWho(s)
+}
+```
+
+#### 3. 空接口
+
+-   代表是任意类型，如`fmt.Printf()`
+-   `...interface{}`：表示任意格式的接口
+
+```go
+func Println(a ...interface{}) (n int, err error) {
+	return Fprintln(os.Stdout, a...)
+}
+```
+
+#### 4. 类型查询
+
+-   `comma-ok`：断言
+-   `value.(type)`：获取变量类型
+-   `val, ok := value.(int)`：判断 val 是否是 int 类型数据
+
+```go
+// 空接口
+type Element interface{}
+type Person struct{
+    name string
+    age int
+}
+
+func main(){
+    list := make([]Element, 3)
+    list[0] = 1
+    list[1] = "hello"
+    list[2] = Person{"echo", 18}
+    for index, element := list{
+        // 类型断言：val, ok = element.(T)
+        if , ok = element.(int); ok{
+            fmt.Printf("list[%d]是int类型，值是%d\n", index, val)
+        }else if val, ok = element.(string); ok{
+            fmt.Printf("list[%d]是string类型，值是%s\n", index, val)
+        }else{
+            fmt.Println("list[%d]是其他类型")
+        } 
+    }   
+}
+```
+
+-   **switch测试**
+
+```go
+for index, element := list{
+    // 类型断言：val, ok = element.(T)
+    switch value.(type){
+        case int:
+        fmt.Printf("%d是int型，值为%d\n", index, value)
+        case string:
+        fmt.Printf("%d是string型，值为%s\n", index, value)
+        default:
+        fmt.Printf("%d是其他类型", index)
+    }   
+```
+
+# 5. 异常处理
+
+## 1. 系统抛
+
+```go
+func test(){
+    a := [5]int{1,2,3,4,5}
+    index := 10
+    a[index] = 123
+}
+
+func main(){
+    test()
+}
+```
+
+## 2. 自己抛
+
+```go
+package main
+import "fmt"
+
+func main(){
+	fmt.Println(Improve(8))
+    fmt.Println(Improve(-8))
+}
+
+func GetCircleArea(radius float64) (area float64){
+	if radius < 0{
+		panic("半径不能 < 0")
+	}
+	area = 3.14 * radius * radius
+	return
+}
+
+func Improve(radius float64) (area float64){
+	defer func(){
+		if err := recover(); err != nil{
+			fmt.Println(err)
+		}
+	}()
+	area = GetCircleArea(radius)
+	return
+}
+```
+
+## 3. 处理异常
+
+-   `bytes, e := ioutil.ReadFile()`
+-   定义函数时，一般需要处理异常
+
+```go
+func getCircleArea(radius float32)(area float32, err error){
+    if radius < 0{
+        // 创建异常并返回
+        err = errors.New("半径不能为负")
+        return
+    }
+    ret = 3.14 * radius * radius
+    return
+}
+
+func main(){
+    ret, err := getCircleArea(-5)
+    if err != nil{
+        fmt.Println(err)
+    }else{
+        fmt.Println(ret)
+    }
+}
+```
+
+# 6. 字符串和时间日期类型
+
+## 1. 字符串
+
+### 1. 字符串原理
+
+1.  字符串底层就是`bytes`数组
+2.  字符串是由 byte 字节组成，字符串船渡就是byte字节长度
+3.  字符串中的字符串是不能直接修改的
+4.  `rune` 类型用于表示`utf8`的类型
+
+#### 1. 修改字符
+
+```go
+// 修改字符串中的内容
+var str = "hello"
+bs := []byte(str)
+bs[0] = "a"
+// 切片需要转回string
+str = string(bs)
+fmt.Println(str)
+```
+
+#### 2. rune 类型
+
+-   一个rune字符由 1 个或多个 byte 类型组成
+
+```go
+str := "hello"
+fmt.Println(len(str))
+// 每个中文占 3个字节
+str2 := "hello您好"
+fmt.Println(len(str2))
+// 将string 转为 rune
+r := []rune(str)
+fmt.Println(len(r))
+```
+
+#### 3. 字符串反转
+
+```go
+package main
+import "fmt"
+
+func main() {
+	var str string = "hello您好"
+	rs := strReverse(str)
+	fmt.Println(rs)
+	if str == rs{
+		fmt.Println("是回文")
+	}else{
+		fmt.Println("不是回文")
+	}
+}
+
+func strReverse(str string) string{
+	// 字符串的反转
+	r := []rune(str)
+	for i := 0; i < len(r)/ 2; i++ {
+		r[i], r[len(r)-1-i] = r[len(r)-1-i], r[i]
+	}
+	return string(r)
+}
+```
+
+### 2. 字符串操作
+
+-   可以通过Go标准库中的**strings**和**strconv**两个包中的函数进行相应的操作
+
+#### 1. func len(v Type) int
+
+-   获取字符串长度
+
+```go
+func main(){
+    fmt.Println(len("hello"))
+}
+```
+
+#### 2. func Contains(s, substr string) bool
+
+-   n 字符串**s中是否包含substr**，返回bool值
+
+```go
+func main(){
+	fmt.Println(strings.Contains("hello", "h"))
+}
+```
+
+#### 3. func HasPrefix(s, prefix string) bool
+
+-   判断字符串s是否以prefix为开头
+-    HasSuffix是判断结尾
+
+```go
+func main(){
+	fmt.Println(strings.HasPrefix("hello", "h"))
+    fmt.Println(strings.HasSuffix("hello", "h"))
+}
+```
+
+#### 4. func Join(a []string, sep string) string
+
+-   字符串链接，把slice a通过sep链接起来
+
+```go
+func main(){
+	sli := []string{"w", "o", "r", "l", "d"}
+	fmt.Println(strings.Join(sli, "*"))
+}
+```
+
+#### 5. func Index(s, sep string) int
+
+-   在**字符串s中**查找sep所在的位置，返回位置值，找不到返回-1
+-   LastIndex是从后往前查找
+
+```go
+func main(){
+	fmt.Println(strings.Index("hello", "o"))
+}
+```
+
+#### 6. func Repeat(s string, count int) string
+
+-   重复s字符串count次，最后返回重复的字符串
+
+```go
+func main(){
+	fmt.Println(strings.Repeat("hello", 3))
+}
+```
+
+#### 7. func Replace(s, old, new string, n int) string
+
+-   在s字符串中，把**old字符串替换为new字符串**，**n表示替换的次数**，小于0表示全部替换
+
+```go
+func main(){
+	fmt.Println(strings.Replace("hello", "l", "world", 1))
+}
+```
+
+#### 8. func Split(s, sep string) []string
+
+-   把s字符串按照sep分割，返回slice
+-   sep不会保留
+
+```go
+func main(){
+	fmt.Println(strings.Split("hello", "l"))
+}
+```
+
+#### 9. func Trim(s string, cutset string) string
+
+-   在s字符串的头部和尾部去除**cutset**指定的字符串
+
+```go
+func main(){
+	fmt.Println(strings.Trim("hello", "ho"))
+}
+```
+
+#### 10. func Fields(s string) []string
+
+-   去除s字符串的空格符，并且按照空格分割返回slice
+
+```go
+func main(){
+	fmt.Println(strings.Fields("    hel lo "))
+}
+```
+
+### 3. 字符串转换
+
+-   **Append系列函数**：将整数等转换为字符串后，添加到现有的字节数组中
+
+```go
+func main(){
+    str := make([]byte, 0, 100)
+	str = strconv.AppendInt(str, 4567, 10)
+	str = strconv.AppendBool(str, false)
+	str = strconv.AppendQuote(str, "abcdefg")
+	str = strconv.AppendQuoteRune(str, '单')
+	fmt.Println(string(str))
+}
+```
+
+-   **Format系列函数**：把其他类型的转换为字符串
+
+```go
+func main(){
+	a := strconv.FormatBool(false)
+	b := strconv.FormatInt(-1234, 10)
+	//Uint无符号
+	c := strconv.FormatUint(1234, 10)
+	//与FormatInt一样，简写
+	d := strconv.Itoa(-2234)
+	fmt.Println(a, b, c, d)
+	fmt.Println(reflect.TypeOf(a))
+}
+```
 
 
 
+## 2. 时间和日期
 
+1.  time包下的 Time 类型用来表示时间
+2.  time.Now()：获取当前时间
+3.  time.Now().Unix()：获取时间戳
 
+#### 1. 简单使用
 
+```go
+now := time.Now()
+// 分别获取年月日
+year := now.Year()
+month := now.Month()
+day := now.Day()
+hour := now.Hour()
+minute := now.Minute()
+second := now.Second()
+fmt.Printf("%02d-%02d-%02d %02d:%02d:%02d\n", year, month, day, hour, minute, second)
+// 获取时间戳
+timestamp := time.Now().Unix()
+```
 
+#### 2. 时间戳转时间
 
+```go
+// 获取时间戳对象
+timeObj = time.Unix(timestamp, 0)
+year := timeObj.Year
+...
+```
+
+#### 3. time.Now().Format()
+
+-   时间格式化
+
+```go
+now := time.Now()
+fmt.Println(now)
+// golang 中指定为语言诞生时间，时间格式化
+timeStr := now.Format("2006/01/02 15:04:05")
+fmt.Printf("time:%s\n", timeStr)
+```
 
 

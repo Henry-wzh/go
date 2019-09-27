@@ -2445,6 +2445,7 @@ func main(){
  // 创建一个子协程，处理用户请求
 func ClientConn(conn net.Conn){
     // 打印客户端地址
+    // conn.RemoteAddr()是：127.0.0.1:59168 类型：*net.TCPAddr，需要转为字符串
     ipAddr ：= conn.RemoteAddr().String()
     fmt.Println(ipAddr, "连接成功")
     // 缓冲读取
@@ -2462,7 +2463,7 @@ func ClientConn(conn net.Conn){
         // 若对方发送exit，退出连接
         if "exit" == string(msg){
             fmt.Printf("%s退出连接\n", ipAddr)
-            return
+            retuo
         }
         // 把接收的数据转成大写，返回客户端
         res := strings.ToUpper(string(msg))

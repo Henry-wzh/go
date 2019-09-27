@@ -2,8 +2,7 @@ package main
 
 import (
 	"fmt"
-	"reflect"
-	"strconv"
+	"strings"
 )
 
 func main() {
@@ -25,7 +24,7 @@ func main() {
 	//
 	//fmt.Println(strings.Trim("hello", "ho"))
 	//
-	//fmt.Println(strings.Fields("    hel lo "))
+	fmt.Println(strings.Fields("    hel lo "))
 
 	//str := make([]byte, 0, 100)
 	//str = strconv.AppendInt(str, 4567, 10)
@@ -34,12 +33,12 @@ func main() {
 	//str = strconv.AppendQuoteRune(str, '单')
 	//fmt.Println(string(str))
 
-	a := strconv.FormatBool(false)
-	b := strconv.FormatInt(-1234, 10)
-	//Uint无符号
-	c := strconv.FormatUint(1234, 10)
-	//与FormatInt一样，简写
-	d := strconv.Itoa(-2234)
-	fmt.Println(a, b, c, d)
-	fmt.Println(reflect.TypeOf(a))
+	//a := strconv.FormatBool(false)
+	//b := strconv.FormatInt(-1234, 10)
+	////Uint无符号
+	//c := strconv.FormatUint(1234, 10)
+	////与FormatInt一样，简写
+	//d := strconv.Itoa(-2234)
+	//fmt.Println(a, b, c, d)
+	//fmt.Println(reflect.TypeOf(a))
 }

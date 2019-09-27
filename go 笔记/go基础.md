@@ -1704,7 +1704,7 @@ func main(){
 
 #### 10. func Fields(s string) []string
 
--   去除s字符串的空格符，并且按照空格分割返回slice
+-   去除s字符串两边的空格符，并且按照空格分割返回slice
 
 ```go
 func main(){
@@ -1787,4 +1787,716 @@ timeStr := now.Format("2006/01/02 15:04:05")
 fmt.Printf("time:%s\n", timeStr)
 ```
 
+# 7. 处理json
 
+-   使用go语言内置的 **encoding/json 标准库**
+
+## 1.  json序列化
+
+-   使用 json.Marshal()函数，将一组数据进行 json 格式编码
+
+```go
+func Marshal(v interface{})[]slice
+```
+
+### 1. 结构体转 json
+
+```go
+type Person struct{
+    Name string
+    Hobby string
+}
+
+func main(){
+    p := Person{"henry", "play"}
+    // 调用 api 转
+    b, err = json.Marshal(p)
+    // 处理err
+    if err != nil{
+        fmt.Println("json err", err)
+    }else{
+        fmt.Println(string(b))
+    }
+    
+    // 格式化转换
+    if b,err := json.MarshallIndent(p, "", "  ");err!=nil{
+        fmt.Println("json err", err)
+    }else{
+        fmt.Println(string(b))
+    }
+}
+```
+
+### 2. struct tag
+
+-   解决私有字段小写，无法转 **json** 的问题
+
+```go
+type Person struct{
+    Name string `json:"name"`
+    Hobby string
+}
+```
+
+### 3. map 转 json
+
+```go
+// interface{}:表示任意类型
+m := make(map[string]interface{})
+m["name"] = "henry"
+m["age"] = 18
+m["niubility"] = true
+
+mjson, err := json.Marshal(map)
+if err != nil{
+	fmt.Println("json err", err)
+}else{
+    fmt.Println(string(mjson))
+}
+```
+
+## 2.  json反序列化
+
+-   解析到结构体或者接口式，**目标位置必须是地址**
+
+-   解析到结构体
+
+```go
+type Person struct{
+    Name string `json:"name"`
+    Hobby string `json:"hobby"`
+}
+
+func main(){
+    b := []byte(`{"name":"henry", "hobby":"play"}`)
+    // 声明结构体
+    var p Person
+    // 解析到结构体
+    err := json.Unmarshal(b, &p)
+    if err != nil{
+        fmt.Println("json err", err)
+    }else{
+        fmt.Println(p)
+    }
+}
+```
+
+-   解析到 interface
+    -   **默认解析到 map 上**
+
+```go
+func main(){
+    b := []byte(`{"Name":"henry", "Hobby":"play"}`)
+    // 声明结构体
+    var i interface{}
+    // 解析到接口
+    err := json.Unmarshal(b, &i)
+    if err != nil{
+        fmt.Println("json err", err)
+    }else{
+        fmt.Println(i))
+    }
+    // 判断类型
+    m := i.(map[string]interface{})
+    for k, v := range m{
+        switch val := v.(type){
+            case string:
+            fmt.Println(k, "是string类型", val)
+            ...
+            default:
+             fmt.Println(k, "是其他类型", val)
+        }
+    }
+}
+```
+
+# 8. 文件读写
+
+```go
+func main(){
+    // 新建文件
+    file, err := os.Create("./test.txt")
+    if err != nil{
+        fmt.Println(err)
+        return
+    }
+    defer file.Close()
+    // 写入内容
+    for i:=0; i < 5; i++{
+        file.WriteString("ab\n")
+        file.Write([]byte("cd\n"))
+    }
+    // 读取文件
+    
+}
+```
+
+```go
+// 读取文件
+```
+
+# 9. 网编并发
+
+-   **并行**：在同一时刻，有多条指令在多个CPU处理器上同时执行
+-   **并发**：在同一时刻，只能有一条指令执行，但多个进程指令被快速地轮换执行
+
+## 1. go语言并发
+
+-   go 从语言层面就支持了并发
+-   简化了并发程序的编写
+
+## 2. goroutine 
+
+1.  是 **go 并发设计的核心**
+2.  goroutine 就是协程，比线程更小，十几个 goroutine 在底层可能就是五六个线程
+3.  go 语言内部实现了 goroutine 的内存共享，执行 goroutine 只需极少的栈内存大概 4-5 KB)
+
+## 3. 创建 goroutine
+
+1.  **只需要在语句前添加 go 关键字，就可以创建并发执行单元**
+2.  开发人员无需了解任何执行细节，调度器会自动将其安排到合适的系统线程上执行
+3.  如果**主协程退出**了，其他任务**也会退出**
+
+```go
+// 子协程
+func tt(){
+    i:=0
+    for {
+        i++
+        fmt.Printf("tt：%d\n", i)
+        time.Sleep(1 * time.Second)
+    }
+}
+// 协程
+func main(){
+    go tt()
+    // 协程执行语句
+    go fmt.Println("123")
+    // 自定义方法，开协程
+    go func(){
+        go for i := 0; i<10; i++{
+            
+        }
+        ...
+    }
+    i:=0
+    for {
+        i++
+        fmt.Printf("main：%d\n", i)
+        time.Sleep(1 * time.Second)
+    }
+    
+}
+```
+
+## 4. runtime包
+
+### 1. runtime.Gosched()
+
+-   出让 CPU 时间片
+
+```go
+func main(){
+    go func(s string){
+        for i:=0; i < 2; i++{
+            fmt.Println(s)
+        }
+    }("world")
+    for i:=0; i < 2; i++{
+        // 出让时间片
+        runtime.Gosched()
+		fmt.Println("hello")
+     }
+}
+```
+
+### 2. runtime.Goexit()
+
+-   立即终止当前协程
+
+```go
+func main(){
+	go func(){
+		defer fmt.Println("A.defer")
+		func(){
+			defer fmt.Println("B.defer")
+			// 退出协程
+			runtime.Goexit()
+			fmt.Println("B")
+		}()
+		fmt.Println("A")
+	}()
+	for {}
+}
+// B.defer A.defer
+```
+
+### 3. runtime.GOMAXPROCS()
+
+-   设置执行代码的CPU核心数
+-   返回值：上次设置的值，默认是 logic CPUs
+
+```go
+func main(){
+    n := runtime.GOMAXPROCS(3)
+    fmt.Println(n)
+    for{
+        go fmt.Print(0)
+        fmt.Print(1)
+    }   
+}
+```
+
+## 5. channel
+
+1.  goroutine **运行在相同地址空间**，因此访问共享内存必须做好同步，处理好线程安全问题
+2.  goroutine 奉行通过**通信来共享内存**，而不是共享内存来通信
+3.  channel **是一个引用类型**，用于多个 goroutine 通讯，其**内部实现了同步，确保并发安全**
+
+### 1. 基本使用
+
+#### 1. 使用`make()`创建
+
+-   定义一个channel 时，也需要定义发送到channel的值的类型
+
+```go
+make (chan 类型)
+make (chan 类型, 容量)
+```
+
+-   当 capacity = 0 时
+
+```go
+// 发送数据到管道
+channel <- value
+// 取数据
+<-channel
+// 取并接收数据
+x := <-channel
+// 取、接收并检查数据。管道是否关闭
+x, ok := <-channel
+```
+
+#### 2. 示例
+
+-   **只要管道存在，取值操作就是阻塞事件**
+
+```go
+func main(){
+    c := make(chan int)
+    go func(){
+        defer fmt.Println("子协程结束")
+        fmt.Println("子协程运行")
+        c <- 666
+    }()
+    num := <-c
+    fmt.Println(num)
+    fmt.Println("main")
+}
+```
+
+### 2. 无(有)缓冲的 channel
+
+-   **无缓冲的通道**是指在接收前没有能力保存任何值的通道
+-   **有缓冲的通道**是指在接收前可以保存数据的通道
+
+```go
+func main(){
+    // 无缓冲的 channel，容量 0
+    c := make(chan int, 0)
+    // 有缓冲的 channel，容量 3
+    c := make(chan int, 3)
+    fmt.Println(len(c), cap(c))
+    // 子协程存数据
+    go func(){
+        defer fmt.Println("子协程结束")
+        for i:=0; i<3; i++{
+            c <- i
+        	fmt.Prinln("子协程正在运行",i, len(c), cap(c))
+        }
+    }()
+    time.Sleep(time.Second)
+    // 主协程从管道取数据
+    for i:=0; i<3; i++{
+        num := <- c
+		fmt.Println(num)
+    }
+   fmt.Println("主协程结束")
+}
+```
+
+### 3. close()
+
+-   可以通过内置的 **close()函数关闭channel**
+
+```go
+func main(){
+    c := make(chan int)
+    go func(){
+        for i:=0; i<5; i++{
+            c <- i
+        }
+        // 通知其他协程管道已经关闭
+        close(c)
+    }()
+    
+    for {
+        if data,ok := <-c;ok{
+            fmt.Println(data)
+        }else{
+            break
+        }
+    }
+    fmt.Println("finished")
+}
+```
+
+### 4. 单方向的 channel
+
+#### 1. 单向管道
+
+-   默认情况下，通道是双向的
+
+```go
+// 普通的通道
+var ch1 chan in
+// 只用于写 float64 数据的管道
+var ch2 chan<- float64
+// 只用于取 int 类型数据的管道
+var ch3 <-chan int
+```
+
+-   可以将 channel 隐式转为单向 channel
+
+```go
+c := make(cha int, 3)
+// 转为单向只写
+var send chan<- int = c
+// 转为单向只读
+var recv <-chan int = c
+
+send <- 1
+<- recv
+```
+
+#### 2. 生产则和消费者
+
+```go
+// producer
+func producer (out chan<-int){
+    defer close(out)
+    for i:= 0; i<5; i++{
+        out <- i
+    }
+}
+// consumer
+func consumer(in <-chan int){
+    for num := range in {
+        fmt.Println(num)
+    }
+}
+
+func main(){
+    c := make(chan int)
+    go produer(c)
+    consumer(c)
+    fmt.Println("done")
+}
+```
+
+### 5. 定时器
+
+-   **基于管道实现**
+
+#### 1. Timer
+
+-   时间到了，只响应一次
+
+```go
+func main(){
+	// 基本使用
+    timer1 = time.NewTimer(2 * time.Second)
+    // 当前时间
+    t1 := time.Now()
+    fmt.Printf("t1:%v\n", t1)
+    t2 := <-timer1.C
+    fmt.Printf("t1:%v\n", t2)
+    
+    // timer 响应事件
+    timer2 := time.NewTimer(time.Second)
+    for {
+       	<-timer2.C
+        fmt.Println("时间到")
+        break
+    }
+    
+    // 通过 timer 实现延时功能
+    // 1
+    time.Sleep(2*time.Second)
+    fmt.Println("2s")
+    // 2
+    time3 := time.NewTimer(2*time.Second)
+    <-timer3.C
+    fmt.Println("2s...")
+    // 3
+    <-time.After(2 * time.Second)
+    fmt.Println("2s.......")
+    // 4 停止定时器
+    timer4 := time.NewTimer(time.Second)
+    go func(){
+        <-timer4.C
+        fmt.Println("定时时间到")
+    }()
+    stop := timer4.Stop()			// 返回 bool 值，停止成功则为 true
+    if stop{
+        fmt.Println("timer4已经关闭")
+    }
+    // 5 重制定时器
+    timer5 := time.NewTimer(3 * time.Second)
+    timer5.Reset(time.Second)
+    fmt.Println(time.Now())
+    fmt.Println(<-time5.C)
+}
+```
+
+#### 2. Ticker
+
+-   时间到了，多次响应，循环响应
+
+```go
+func main(){
+    // 创建定时器
+    ticker := time.NewTicker(time.Second)
+    i := 0
+    go func(){
+        for {
+            // 每取一次，执行一回
+            fmt.Println(<-ticker.C)
+            i++
+            fmt.Println(i)
+            if i == 5{
+                ticker.Stop()
+            }
+        }
+    }()
+    for {}
+}
+```
+
+### 6. select
+
+1.  go 语言提供了 select 关键字，可以监听 channel 上单 数据流滚动
+2.  语法与 switch 类似，区别是 select 要求**每个 case 语句里必须是一个 IO 操作**
+3.  如果有符合条件的，则任意选择一条使用
+
+#### 1. select 使用
+
+```go
+select {
+    // 从管道中正确取出数据，执行
+    case <-chan1:
+    ...
+    // 从管道中正确写入数据，执行
+    case chan2<-:
+    ...
+}
+```
+
+#### 2. 示例
+
+```go
+func main(){
+    int_chan := make(chan int, 1)
+    string_chan := make(chan string, 1)
+    go func(){
+        int_chan<- 1
+    }()
+    go func(){
+        string_chan<- "hello"
+    }()
+    
+    select {
+        case value := <-int_chan:
+        fmt.Println("int_chan", value)
+        case value := <-string_chan:
+        fmt.Println("string_chan:", value)
+    }
+	fmt.Println("done:")
+}
+```
+
+### 7. 协程同步锁
+
+1.  go 中 channel 实现了同步，确保并发安全，同时也提供了锁的操作方式
+2.  go 中 **sync** 包提供了锁相关的支持
+3.  Mutex：以加锁方式解决并发安全问题**(map 并发需要加锁)**
+
+```go
+type Account struct{
+    money int
+    // 声明锁
+    flag sync.Mutex
+}
+// 模仿银行检测
+func (a *Account) Check(){
+    time.Sleep(time.Second)
+}
+// 设置余额
+func (a *Account) SetAccount(n int){
+    a.money += n
+}
+// 查询余额
+func (a *Account) GetAccount() int{
+   return a.money
+}
+// 购买
+func (a *Account) Buy(n int){
+    a.flag.Lock()
+    if a.money > n{
+        a.Check()
+        a.money -= n
+    }
+    a.flag.UnLock()
+}
+
+func main(){
+    var account Account
+    account.SetAccount(10)
+    go account.Buy(6)
+    go account.Buy(5)
+    time.Sleep(time.Second)
+    fmt.Println(account.GetAccount())
+    
+}
+```
+
+#### 2. sync.WaitGroup
+
+-   用来等待一组子协程结束
+
+```go
+func main(){
+    // 创建一个数据通道
+    ch := make(chan int)
+    // 记录子协程个数
+    count := 2
+    go func(){
+        fmt.Println("子协程1")
+        ch<-1
+    }()
+    go func(){
+        fmt.Println("子协程2")
+        ch<-1
+    }()
+    for range ch{
+        count--
+        if count == 0{
+            close(ch)
+        }
+    }
+}
+```
+
+-   **sync.WaitGroup**
+    1.  Add()：添加计数
+    2.  Done()：计数 -1
+    3.  Wait()：等待所有操作完成
+
+```go
+func main(){
+	// 声明等待组
+	var wg sync.WaitGroup()
+    wg.Add(2)
+    go func(){
+        fmt.Println("子协程1")
+        wg.Done()
+    }()
+    go func(){
+        fmt.Println("子协程2")
+		 wg.Done()
+    }()
+    wg.Wait()  
+}
+```
+
+## 6. socket 编程
+
+```go
+// tcp_server.go
+func main(){
+    listener, err := net.Listen("tcp", "127.0.0.1:8888")
+    if err != nil{
+        fmt.Println(err)
+    }
+    // 关闭资源
+    defer listener.Close()
+    for {
+        // 阻塞等待客户端连接
+        conn, err := listener.Accept()
+        if err != nil{
+        	fmt.Println(err)
+            continue
+    	}
+        // 创建一个子协程，处理用户请求
+        go ClientConn(conn)
+    }   
+}
+
+ // 创建一个子协程，处理用户请求
+func ClientConn(conn net.Conn){
+    // 打印客户端地址
+    ipAddr ：= conn.RemoteAddr().String()
+    fmt.Println(ipAddr, "连接成功")
+    // 缓冲读取
+    buffer := make([]byte, 1024)
+    for {
+        // n 接收用户数据的长度
+        n,err := conn.Read(buffer)
+         if err != nil{
+        	fmt.Println(err)
+            return
+    	}
+        // 截取用户有效数据
+        msg := buf[:n]
+        fmt.Printf("接收到%s, %s\n", ipAddr, string(msg))
+        // 若对方发送exit，退出连接
+        if "exit" == string(msg){
+            fmt.Printf("%s退出连接\n", ipAddr)
+            return
+        }
+        // 把接收的数据转成大写，返回客户端
+        res := strings.ToUpper(string(msg))
+        conn.Write([]byte(res))
+    }
+}
+```
+
+```go
+// client_server.go
+func main(){
+    // 客户端主动连接server
+    conn, err := net.Dial("tcp", "127.0.0.1:8888")
+    if err != nil{
+        fmt.Println(err)
+        return
+    }
+    defer conn.Close()
+   	// 缓冲读取
+    buff := make([]byte, 1024)
+    for{
+        fmt.Println("请输入发送的内容：")
+        fmt.Scan(&buff)
+        fmt.Println("发送的内容:%s\n", string(buff))
+        // 发送数据
+        conn.Write(buff)
+        // 接收
+        n, err := conn.Read(buff)
+        if err != nil{
+            fmt.Println(err)
+            return
+    	}
+        msg := buff[:n]
+        fmt.Printf(string(msg))
+    }
+}
+```

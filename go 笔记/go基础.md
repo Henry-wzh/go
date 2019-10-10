@@ -2559,6 +2559,8 @@ func main(){
 1.  超文本传输协议(HTTP，HyperText Transfer Protocol)是互联网上应用最为广泛的一种网络协议，它详细规定了浏览器和万维网服务器之间互相通信的规则，通过因特网传送万维网文档的数据传送协议
 2.  HTTP协议通常承载于TCP协议之上
 
+### 1. HTTP服务端
+
 ```go
 // HTTP服务端
 package main
@@ -2589,6 +2591,8 @@ func myHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 ```
+
+### 2. HTTP客户端
 
 ```go
 // HTTP客户端
@@ -2632,10 +2636,10 @@ func main() {
 ## 3. 案例实践
 
 1.  读取大量数据
-2.  对数据进行清洗(淘汰不想要的数据)
+2.  对数据进行清洗(清除不想要的数据)
 3.  对数据分类(省份，年龄，性别)
 
-## 4. 读入数据
+### 1. 读入数据
 
 - 需要先下载解决编码问题：C:\Users\Xu jk>go get github.com/axgle/mahonia
 
@@ -2705,155 +2709,149 @@ func ConvertEncoding(src string, encoding string) (dst string) {
 	dst = utfStr
 	return
 }
+```
+
+### 2. 数据清洗
+
+- 把身份不对的筛选掉，需要按照逗号拆分，取index=1的元素。
+- 清理好的数据存一个文件，不要数据存另一个文件(数据分离)。
+
+#### 思路
+
+-   根据身份证，按照34个省划分数据
+-   根据34个省，创建34个数据管道
+-   读取优质文件，写入对应的省管道
+-   将34个管道的数据写出到34个省份文件
+
+```go
+package main
+
+import (
+	"os"
+	"fmt"
+	"sync"
+	"bufio"
+	"io"
+	"strings"
+ )
+
+//声明省份对象
+type Province struct{
+	//省份id, 身份证号前2位
+	Id string
+	//省份名
+	Name string
+	//对应一个省份文件如：北京.txt
+	File *os.File
+	//本省文件的数据管道
+	chanData chan string
+}
+//声明等待组
+var wg sync.WaitGroup
+
+func main(){
+	//创建map,用于存放省份
+	//key 为省份编号前2位，值为省份对象
+	pMap := make(map[string]*Province)
+	//声明34个省市
+	ps := []string{"北京市11", "天津市12", "河北省13",
+	"山西省14", "内蒙古自治区15", "辽宁省21", "吉林省22",
+	"黑龙江省23", "上海市31", "江苏省32", "浙江省33", "安徽省34",
+	"福建省35", "江西省36", "山东省37", "河南省41", "湖北省42",
+	"湖南省43", "广东省44", "广西壮族自治区45", "海南省46",
+	"重庆市50", "四川省51", "贵州省52", "云南省53", "西藏自治区54",
+	"陕西省61", "甘肃省62", "青海省63", "宁夏回族自治区64", "新疆维吾尔自治区65",
+	"香港特别行政区81", "澳门特别行政区82", "台湾省83",}
+	//遍历所有省市，组装数据
+	for _,p := range ps{
+		//取到name和id
+		name := p[:len(p)-2]
+		id :=p[len(p)-2:]
+		province := Province{Id:id,Name:name}
+		//添加进map
+		//key为id,值为省市对象
+		pMap[id] = &province
+		//为每个省份打开一个文件
+		file,_:=os.OpenFile(
+			"D:/课上视频/复习go语言day16/数据/34省数据"+province.Name+".txt",
+			os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+		//为省份对象的File赋值
+		province.File = file
+		defer file.Close()
+		//创建每个省的数据管道
+		province.chanData = make(chan string)
+		fmt.Println(name, "管道已创建")
+	}
+	//遍历34个省市的map,开34个协程向对应文件写数据
+	for _,Province := range pMap{
+		wg.Add(1)
+		//想文件写入数据
+		go writeFile(province)
+	}
+	//读取good文件数据，写入对应省份管道
+	file,_:=os.Open("D:/课上视频/复习go语言day16/数据/好坏数据/kaifang_good.txt")
+	defer file.Close()
+	//新建一个缓冲区，把内容先放在缓冲区
+	reader := bufio.NewReader(file)
+	//逐行判断身份证前两位
+	for{
+		//按行读取
+		lineBytes,_,err:=reader.ReadLine()
+		//读取完毕时，关闭数据管道
+		if err == io.EOF{
+			for _,Province:=range pMap{
+				close(province.chanData)
+				fmt.Println(province.Name,"管道已关闭")
+			}
+			break
+		}
+		//拿到每行数据，转为字符串
+		lineStr:=string(lineBytes)
+		//按逗号切分
+		fieldsSlice := strings.Split(lineStr,",")
+		//id为身份证前2位
+		id:=fieldsSlice[1][0:2]
+		//对号入座，写入相应的管道
+		if province,ok :=pMap[id];ok{
+			province.chanData <- (lineStr+"\n")
+		}else{
+			fmt.Println("未知的省")
+		}
+
+	}
+	//阻塞等待协程结束
+	wg.Wait()
+
+}
+
+//向文件写入数据
+func writeFile(province *Province){
+	//死循环读取管道，管道关闭时循环结束
+	for lineStr:=range province.chanData{
+		province.File.WriteString(lineStr)
+		fmt.Println(province.Name,"写入",lineStr)
+	}
+	//标记协程结束
+	wg.Done()
+}
+
+
+
+
+//处理中文乱码
+func ConvertEncoding(src string, encoding string) (dst string) {
+	//创建编码处理器
+	enc := mahonia.NewDecoder(encoding)
+	utfStr := enc.ConvertString(src)
+	dst = utfStr
+	return
+}
 
 ```
 
-## 5. 数据清洗
+​	
 
-- 把身份不对的筛选掉，需要按照逗号拆分，取index=1的元素。
-
-  好的数据存一个文件，不要数据存另一个文件。
-
-  ```
-  思路：
-  根据身份证，按照34个省划分数据：
-  	1.根据34个省，创建34个数据管道
-  	2.读取优质文件，写入对应的省管道
-  	3.将34个管道的数据写出到34个省份文件
-  ```
-
-- 代码
-
-  ```go
-  package main
-  
-  
-  import (
-  	"os"
-  	"fmt"
-  	"sync"
-  	"bufio"
-  	"io"
-  	"strings"
-   )
-  
-  //声明省份对象
-  type Province struct{
-  	//省份id, 身份证号前2位
-  	Id string
-  	//省份名
-  	Name string
-  	//对应一个省份文件如：北京.txt
-  	File *os.File
-  	//本省文件的数据管道
-  	chanData chan string
-  }
-  //声明等待组
-  var wg sync.WaitGroup
-  
-  func main(){
-  	//创建map,用于存放省份
-  	//key 为省份编号前2位，值为省份对象
-  	pMap := make(map[string]*Province)
-  	//声明34个省市
-  	ps := []string{"北京市11", "天津市12", "河北省13",
-  	"山西省14", "内蒙古自治区15", "辽宁省21", "吉林省22",
-  	"黑龙江省23", "上海市31", "江苏省32", "浙江省33", "安徽省34",
-  	"福建省35", "江西省36", "山东省37", "河南省41", "湖北省42",
-  	"湖南省43", "广东省44", "广西壮族自治区45", "海南省46",
-  	"重庆市50", "四川省51", "贵州省52", "云南省53", "西藏自治区54",
-  	"陕西省61", "甘肃省62", "青海省63", "宁夏回族自治区64", "新疆维吾尔自治区65",
-  	"香港特别行政区81", "澳门特别行政区82", "台湾省83",}
-  	//遍历所有省市，组装数据
-  	for _,p := range ps{
-  		//取到name和id
-  		name := p[:len(p)-2]
-  		id :=p[len(p)-2:]
-  		province := Province{Id:id,Name:name}
-  		//添加进map
-  		//key为id,值为省市对象
-  		pMap[id] = &province
-  		//为每个省份打开一个文件
-  		file,_:=os.OpenFile(
-  			"D:/课上视频/复习go语言day16/数据/34省数据"+province.Name+".txt",
-  			os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
-  		//为省份对象的File赋值
-  		province.File = file
-  		defer file.Close()
-  		//创建每个省的数据管道
-  		province.chanData = make(chan string)
-  		fmt.Println(name, "管道已创建")
-  	}
-  	//遍历34个省市的map,开34个协程向对应文件写数据
-  	for _,Province := range pMap{
-  		wg.Add(1)
-  		//想文件写入数据
-  		go writeFile(province)
-  	}
-  	//读取good文件数据，写入对应省份管道
-  	file,_:=os.Open("D:/课上视频/复习go语言day16/数据/好坏数据/kaifang_good.txt")
-  	defer file.Close()
-  	//新建一个缓冲区，把内容先放在缓冲区
-  	reader := bufio.NewReader(file)
-  	//逐行判断身份证前两位
-  	for{
-  		//按行读取
-  		lineBytes,_,err:=reader.ReadLine()
-  		//读取完毕时，关闭数据管道
-  		if err == io.EOF{
-  			for _,Province:=range pMap{
-  				close(province.chanData)
-  				fmt.Println(province.Name,"管道已关闭")
-  			}
-  			break
-  		}
-  		//拿到每行数据，转为字符串
-  		lineStr:=string(lineBytes)
-  		//按逗号切分
-  		fieldsSlice := strings.Split(lineStr,",")
-  		//id为身份证前2位
-  		id:=fieldsSlice[1][0:2]
-  		//对号入座，写入相应的管道
-  		if province,ok :=pMap[id];ok{
-  			province.chanData <- (lineStr+"\n")
-  		}else{
-  			fmt.Println("未知的省")
-  		}
-  
-  	}
-  	//阻塞等待协程结束
-  	wg.Wait()
-  
-  }
-  
-  //向文件写入数据
-  func writeFile(province *Province){
-  	//死循环读取管道，管道关闭时循环结束
-  	for lineStr:=range province.chanData{
-  		province.File.WriteString(lineStr)
-  		fmt.Println(province.Name,"写入",lineStr)
-  	}
-  	//标记协程结束
-  	wg.Done()
-  }
-  
-  
-  
-  
-  //处理中文乱码
-  func ConvertEncoding(src string, encoding string) (dst string) {
-  	//创建编码处理器
-  	enc := mahonia.NewDecoder(encoding)
-  	utfStr := enc.ConvertString(src)
-  	dst = utfStr
-  	return
-  }
-  
-  ```
-
-  ​	
-
-## 6. 微服务
+## 4.  微服务
 
 ### 1. 什么是微服务 
 
@@ -2862,7 +2860,7 @@ func ConvertEncoding(src string, encoding string) (dst string) {
 ### 2. 微服务的特点
 
 - 单一职责，独立的业务单独放在一个项目里，比如订单服务作为一个项目
-- 轻量级的通信：http，rpc  非轻量级(如java的RMI)
+- 轻量级的通信：http，rpc  非轻量级(**如java的RMI**)
 - 隔离性：每个服务项目隔离，不干扰
 - 有自己的数据
 - 技术多样性
@@ -2871,45 +2869,46 @@ func ConvertEncoding(src string, encoding string) (dst string) {
 
 - 互联网行业的快速发展，需求变化快，用户数量变化
 - 敏捷开发深入人心，用最小代价，做最快的迭代，频繁修改，测试，上线
-- 容器技术的成熟，是微服务的技术基础。
+- **容器技术的成熟**，是微服务的技术基础。
 
 ### 4. 互联网架构演进之路
 
 #### 1. 单体架构
 
--   所有功能集成在一个项目中
--   项目整个打包，可以部署到服务器运行
--   应用与数据库可以分开部署，提高性能
--   优点：
+1.  所有功能集成在一个项目中
+2.  项目整个打包，可以部署到服务器运行
+3.  应用与数据库可以分开部署，提高性能
+4.  优点：
     -   小项目的首选，开发成本低，架构简单
--   缺点：
+5.  缺点：
     -   项目复杂之后，很难扩展和维护
     -   扩展成本，有瓶颈
     -   技术栈受限。
 
 #### 2. SOA架构(面向服务的架构)
 
--   将重复性能功能进行抽取，抽取成对应的服务
--   通过ESB服务总线去访问
--   优点：
+1.  SOA defines a way to make software components reusable via service interfaces.
+2.  将重复性能功能进行抽取，抽取成对应的服务
+3.  通过ESB服务总线去访问，esb是SOA架构必不可少的组件
+4.  优点：
     -   提高系统可重复性
     -   ESB减少系统接口耦合问题
--   缺点：
+5.  缺点：
     -   系统与服务界限模糊，不利于开发
     -   ESB服务接口协议不固定，不利于系统维护
     -   抽取力度较大，有一些耦合性。
 
 #### 3. 微服务架构
 
--   将服务层一个一个抽取为微服务
--   遵循单一原则
--   微服务之间采用一些轻量协议传输数据
--   优点：
+1.  将服务层一个一个抽取为微服务
+2.  遵循单一原则
+3.  微服务之间采用一些轻量协议传输数据
+4.  优点：
     -   服务拆分粒度非常细，利于开发
     -   提高系统可维护性
     -   比ESB更轻量
     -   适用于互联网更新换代快的情况
--   缺点
+5.  缺点
     -   服务过多，服务治理成本高
     -   开发技术要求高
 
@@ -2932,7 +2931,7 @@ func ConvertEncoding(src string, encoding string) (dst string) {
 - 微服务部署到docker容器
 - 设计服务编排K8S,swarm
 
-## 7. RPC
+## 5. RPC
 
 ### 1. RPC简介
 

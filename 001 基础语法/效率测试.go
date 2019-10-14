@@ -18,7 +18,7 @@ func Fib(n int) int64 {
 
 func main() {
 	t1 := time.Now()
-	sum := Fib(50)
+	sum := Fib(48)
 	t3 := time.Since(t1)
 	fmt.Println("sum=", sum)
 	fmt.Println("use time:", t3)

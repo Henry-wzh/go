@@ -2,7 +2,7 @@ package main
 import "fmt"
 
 func main(){
-	res := grade(90)
+	res := grade(60)
 	fmt.Println(res)
 }
 
@@ -13,6 +13,7 @@ func grade(score int)(string){
 	case score < 0 || score > 100:
 		res = "输入有误"
 		// 若想继续执行，添加 fallthrough
+		//fallthrough
 	case score < 60:
 		res = "不及格"
 	case score < 80:

@@ -1,0 +1,49 @@
+.vscode
+venv/
+.idea/
+logs/
+/temp
+local_settings.py
+*.pyc
+.DS_Store
+### Example user template template
+### Example user template
+temp/
+# IntelliJ project files
+.idea
+*.iml
+out
+gen
+
+
+venv
+.idea/
+logs/*
+box_base/local_settings.py
+__pycache__
+my.json
+*.pyc
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# Logs and databases
+*.log
+*.sql
+*.sqlite
+# OS generated files
+.DS_Store*
+ehthumbs.db
+Icon?
+Thumbs.db
+.idea/
+venv/
+node_modules/
+package-lock.json
+
+__pycache__
+
+.flask.env

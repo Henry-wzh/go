@@ -1,15 +1,8 @@
 package main
 
-import (
-	"fmt"
-	"reflect"
-)
+import "reflect"
 
 func main(){
-	var a = 10
-	fmt.Println(a)
-	var b int
-	b = a
-	fmt.Println(b, reflect.TypeOf(b))
-
+	a := (1)
+	println(a, reflect.TypeOf(a))
 }
